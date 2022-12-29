@@ -28,7 +28,7 @@ class Betriebsratsumlage:
         :param text: text to be parsed for Betriebsumlage value
         :return: Betriebsumlage value
         """
-        match = re.findall(r"8411 [a-zA-Z. ]+ (\d+,\d+)", text)
+        match = re.findall(r"841 [a-zA-Z. ]+ (\d+,\d+)", text)
         if not match:
             raise ValueNotFoundError("Betriebsumlage value not found")
         self.months[month] = sum((float(v.replace(",", ".")) for v in match))
