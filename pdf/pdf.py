@@ -7,6 +7,7 @@ import re
 import glob
 from dataclasses import dataclass, field
 from PyPDF2 import PdfReader, PasswordType
+from PyPDF2.errors import PdfReadError
 
 
 @dataclass
@@ -31,8 +32,16 @@ class Pdf:
         :param pwd: password of encrypted files
         """
         reader = PdfReader(self.path)
-        if reader.decrypt(pwd) == PasswordType.NOT_DECRYPTED:
-            raise RuntimeError(f"Invalid password for '{self.path}'")
+
+        # if file is encrypted, decrypt it
+        if reader.is_encrypted:
+            try:
+                password_type: PasswordType = reader.decrypt(pwd)
+                # check if password is correct
+                if password_type == PasswordType.NOT_DECRYPTED:
+                    raise RuntimeError(f"Invalid password for '{self.path}'")
+            except PdfReadError as e:
+                raise RuntimeError(f"Error reading '{self.path}': {e}") from e
 
         for page in reader.pages:
             self.text += page.extract_text() + "\n"

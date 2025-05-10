@@ -3,7 +3,6 @@ Extract data from "Gehaltszettel" and write to csv format
 """
 
 import os
-import sys
 import argparse
 import logging
 from typing import Sequence, Optional
@@ -11,6 +10,7 @@ from dotenv import load_dotenv, find_dotenv
 from pdf import get_pdfs
 from betriebsratsumlage import Betriebsratsumlage, ValueNotFoundError
 
+logger = logging.getLogger(__name__)
 
 def load_password() -> Optional[str]:
     """
@@ -59,12 +59,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     pwd = load_password()
     if pwd is None:
-        logging.error("Could not load password from '.env' file")
+        logger.error("Could not load password from '.env' file")
         return 1
 
     pdfs = get_pdfs(args.path, args.year)
     if not pdfs:
-        logging.error("No pdf files found with the provided parameters")
+        logger.error("No pdf files found with the provided parameters")
         return 1
 
     # extract Betriebsratsumlage from each pdf
@@ -72,31 +72,32 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         try:
             pdf_file.read_text(pwd)
             v = bru.get_value_from_text(pdf_file.month, pdf_file.text)
-            logging.info(f"{pdf_file.month:>2} {v:.2f}")
+            logger.info(f"{pdf_file.month:>2} {v:.2f}")
         except RuntimeError as e:
-            logging.error(e)
+            logger.error(e)
             error = True
             continue
         except ValueNotFoundError as e:
-            logging.error(f"{e} in '{pdf_file.path}'")
+            logger.error(f"{e} in '{pdf_file.path}'")
             error = True
             continue
 
     # check if any month is missing
     if diff := set(range(1, 13)) - set(bru.months):
-        logging.error(f"Missing months: {', '.join(str(d) for d in diff)}")
+        logger.error(f"Missing months: {', '.join(str(d) for d in diff)}")
         error = True
 
-    logging.info(f"Sum: {bru.sum:>.2f}")
+    logger.info(f"Sum: {bru.sum:>.2f}")
 
     write_csv(csv_file, bru.months)
-    logging.info(f"csv output: '{csv_file}'")
+    logger.info(f"csv output: '{csv_file}'")
 
     if error:
+        logger.error("Errors occurred during processing")
         return 1
 
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())
