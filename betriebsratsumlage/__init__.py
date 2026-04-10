@@ -1,1 +1,1 @@
-from .betriebsratsumlage import Betriebsratsumlage, ValueNotFoundError
+from .betriebsratsumlage import Betriebsratsumlage

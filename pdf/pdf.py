@@ -1,58 +1,68 @@
-"""
-Read Gehaltszettel pdf files
-"""
+"""Read Gehaltszettel pdf files."""
 
-import os
-import re
-import glob
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from PyPDF2 import PdfReader, PasswordType
-from PyPDF2.errors import PdfReadError
+from pathlib import Path
 
+from pypdf import PdfReader
+from pypdf.errors import PdfReadError
+
+from pdf.formats import FORMATS
+from pdf.formats.base import PdfFormat
+
+
+class PdfError(Exception):
+    """Base class for PDF-related errors."""
 
 @dataclass
 class Pdf:
-    """
-    Gehaltszettel pdf
-    """
-    path: str = field(compare=False)
+    """Gehaltszettel pdf."""
+
+    path: Path = field(compare=False)
+    fmt: PdfFormat = field(compare=False)
     year: int = field(init=False, compare=False)
     month: int = field(init=False, compare=False)
     text: str = field(init=False, repr=False, compare=False, default="")
 
     def __post_init__(self):
-        self.year, self.month = [
-            int(v)
-            for v in re.search(r"^(\d{4})(\d{2})", os.path.basename(self.path)).groups()
-        ]
+        """Post construction initialization."""
+        self.year, self.month = self.fmt.extract_month_year(self.path.name)
 
-    def read_text(self, pwd: str) -> None:
-        """
-        read text of pdf files
-        :param pwd: password of encrypted files
-        """
-        reader = PdfReader(self.path)
+    def read_text(self, get_password: Callable[[], str | None] | None = None) -> None:
+        """Read text of pdf file.
 
-        # if file is encrypted, decrypt it
+        :param get_password: callable invoked only when the file is encrypted;
+                             should return the password string or None
+        """
+        try:
+            reader = PdfReader(self.path)
+        except PdfReadError as e:
+            raise PdfError(f"Error reading '{self.path}': {e}") from e
+
         if reader.is_encrypted:
+            pwd = get_password() if get_password is not None else None
+            if pwd is None:
+                raise PdfError(f"'{self.path}' is encrypted but no password was provided")
             try:
-                password_type: PasswordType = reader.decrypt(pwd)
-                # check if password is correct
-                if password_type == PasswordType.NOT_DECRYPTED:
-                    raise RuntimeError(f"Invalid password for '{self.path}'")
+                if not reader.decrypt(pwd):
+                    raise PdfError(f"Invalid password for '{self.path}'")
             except PdfReadError as e:
-                raise RuntimeError(f"Error reading '{self.path}': {e}") from e
+                raise PdfError(f"Error decrypting '{self.path}': {e}") from e
 
         for page in reader.pages:
             self.text += page.extract_text() + "\n"
 
 
-def get_pdfs(path: str, year: str) -> list[Pdf]:
-    """
-    get all Gehaltszettel pdf files in a given path of a given year
+def get_pdfs(path: Path, year: str) -> list[Pdf]:
+    """Get all Gehaltszettel pdf files in a given path for all known formats of a given year.
+
     :param path: directory to be searched
     :param year: year to be collected
-    :return: list of Pdfs
+    :return: sorted list of Pdfs
     """
-    files = glob.iglob(rf"{year}*Nettoschein*.pdf", root_dir=path)
-    return [Pdf(os.path.join(path, f)) for f in files]
+    pdfs: list[Pdf] = []
+
+    for fmt in FORMATS:
+        pattern = fmt.glob_pattern_template.format(year=year)
+        pdfs.extend(Pdf(path=p, fmt=fmt) for p in path.glob(pattern))
+    return sorted(pdfs, key=lambda p: (p.year, p.month))

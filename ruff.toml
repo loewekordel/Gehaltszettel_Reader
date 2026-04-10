@@ -1,0 +1,81 @@
+# https://docs.astral.sh/ruff/rules
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+
+line-length = 120
+indent-width = 4
+
+lint.select = [
+    "A",    # flake8-builtins
+    "B",    # flake8-bugbear (likely bugs and design problems)
+    "BLE",  # flake8-blind-except
+    "C4",   # flake8-comprehensions (better list/dict comprehensions)
+    "D",    # pydocstyle (docstring conventions)
+    "E",    # pycodestyle errors
+    "F",    # Pyflakes (undefined names, unused imports, etc.)
+    "FLY",  # flynt
+    "G",    # flake8-logging-format
+    "I",    # isort
+    "ICN",  # flake8-import-conventions
+    "INP",  # flake8-no-pep420
+    "ISC",  # flake8-implicit-str-concat
+    "LOG",  # flake8-logging
+    "N",    # pep8-naming
+    "PERF", # Perflint (performance anti-patterns)
+    "PIE",  # flake8-pie
+    "PL",   # pylint
+    "PTH",  # flake8-use-pathlib
+    "Q",    # flake8-quotes
+    "RET",  # flake8-return (return statements)
+    "RUF",  # Ruff-specific rules
+    "S",    # flake8-bandit (security issues)
+    "SIM",  # flake8-simplify (simplification suggestions)
+    "T20",  # flake8-print (print statements)
+    "TID",  # flake8-tidy-imports
+    "TRY",  # tryceratops (exception handling)
+    "UP",   # pyupgrade (modernize Python code)
+    "W",    # pycodestyle warnings
+    "YTT",  # flake8-2020
+]
+
+lint.ignore = [
+    "COM812", # missing-trailing-comma
+    "D401",   # non-imperative-mood
+    "G004",   # logging-f-string
+    "TRY003", # raise-vanilla-args (long exception messages)
+    "TRY400", # error-instead-of-exception
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+[lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+keep-runtime-typing = true

@@ -1,1 +1,1 @@
-from .pdf import Pdf, get_pdfs
+from .pdf import Pdf, PdfError, get_pdfs
